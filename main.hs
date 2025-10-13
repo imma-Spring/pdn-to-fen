@@ -14,14 +14,55 @@ main = do
             \17. 10-14 28-24 18. 20x27 32x23 19. 6-10 22-18 20. 1-5 18x9 21. 5x14 30-26 22.\n\
             \10-15 26-22 23. 14-18 23x14 24. 15-19 1-0"
   let text = words str
-  let idx = "[Result" `elemIndex` text
-  print text
-  print (getElement text idx)
+  --print text
+  print (getResult text)
+  print (getMoves text)
 
-getElement :: [[Char]] -> Maybe Int -> [Char]
-getElement xs maybeIdx = 
+getResult :: [String] -> String
+getResult xs =
+  let maybeIdx = elemIndex "[Result" xs
+      idx = getIndex maybeIdx
+  in
+  if idx == 0
+  then "Result not found"
+  else
+    let resultIdx = idx + 1
+    in if resultIdx >= length xs
+       then "Result not found"
+       else cleanResult (xs !! resultIdx)
+
+cleanResult :: String -> String
+cleanResult result = substring 1 ((length result) - 3) result
+
+getMoves :: [String] -> [[String]]
+getMoves xs = loop 1 (getMoveIdx xs 1)
+  where
+    loop :: Int -> Int -> [[String]]
+    loop idx cond
+      | cond == 0  = []
+      | otherwise  = getMove xs cond : loop (idx + 1) (getMoveIdx xs (idx + 1))
+
+getMove :: [String] -> Int -> [String]
+getMove xs idx =
+  let last = (xs !! (idx + 2))
+  in
+    [(xs !! (idx + 1))] ++ if last == "1-0" || last == "0-1" || last == "1/2-1/2" then [] else [last]
+
+
+getMoveIdx :: [String] -> Int -> Int
+getMoveIdx xs n =
+  let place = getPlace n
+      maybeIdx = elemIndex place xs
+  in getIndex maybeIdx
+
+getPlace :: Int -> String
+getPlace n = show n ++ "."
+
+getIndex :: Maybe Int -> Int
+getIndex maybeIdx =
   case maybeIdx of
-    Just i -> if i >= 0 && i < length xs
-              then xs !! i
-              else "No Element"
-    Nothing -> "No Element"
+    Just i  -> i
+    Nothing -> 0
+
+substring :: Int -> Int -> String -> String
+substring start len str = take len (drop start str)
