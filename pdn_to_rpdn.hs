@@ -1,5 +1,7 @@
 import Data.List
 import Data.List.Split
+import System.Environment (getArgs)
+import System.Directory (doesFileExist)
 
 main :: IO ()
 main = do
@@ -14,12 +16,27 @@ main = do
             \24x15 12. 4-8 22-18 13. 14x23 27x18 14. 2-7 26-22 15. 7-10 15-11 16. 8x15 18x11\n\
             \17. 10-14 28-24 18. 20x27 32x23 19. 6-10 22-18 20. 1-5 18x9 21. 5x14 30-26 22.\n\
             \10-15 26-22 23. 14-18 23x14 24. 15-19 1-0"
-  let text = words str
-  --print text
-  print (getResult text)
-  let moves = getMoves text
-  print (moves)
-  print (splitMoves moves)
+  args <- getArgs
+  case args of
+    (fileName:_) -> do
+      --print fileName
+      print fileName
+      exists <- doesFileExist fileName
+      if exists then do
+        contents <- readFile fileName
+      --print text
+        let games = splitOn "\n\n" contents
+        let text = words (games !! 0)
+        let moves = getMoves (text)
+        print (getResult text)
+      --print moves
+      --print (moves)
+      --print formated moves
+        print (splitMoves moves)
+      else
+        print "File does not exist"
+    [] -> do
+      print "Please provide a fileName"
 
 -- get score
 getResult :: [String] -> String
