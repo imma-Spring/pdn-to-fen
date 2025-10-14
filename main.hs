@@ -1,4 +1,5 @@
 import Data.List
+import Data.List.Split
 
 main :: IO ()
 main = do
@@ -16,8 +17,11 @@ main = do
   let text = words str
   --print text
   print (getResult text)
-  print (getMoves text)
+  let moves = getMoves text
+  print (moves)
+  print (splitMoves moves)
 
+-- get score
 getResult :: [String] -> String
 getResult xs =
   let maybeIdx = elemIndex "[Result" xs
@@ -34,6 +38,7 @@ getResult xs =
 cleanResult :: String -> String
 cleanResult result = substring 1 ((length result) - 3) result
 
+-- get moves
 getMoves :: [String] -> [[String]]
 getMoves xs = loop 1 (getMoveIdx xs 1)
   where
@@ -66,3 +71,31 @@ getIndex maybeIdx =
 
 substring :: Int -> Int -> String -> String
 substring start len str = take len (drop start str)
+
+-- parse moves
+splitMoves :: [[String]] -> [(Int, [String])]
+splitMoves moves = loop 0
+  where
+    loop :: Int -> [(Int, [String])]
+    loop idx
+      | idx == length moves = []
+      | otherwise = (splitMovePair (moves !! idx)) ++ (loop (idx + 1))
+
+splitMovePair :: [String] -> [(Int, [String])]
+splitMovePair moves =
+  [splitMove (moves !! 0)] ++ if length moves == 2 then [splitMove (moves !! 1)] else []
+
+splitMove :: String -> (Int, [String])
+splitMove move =
+  let move_ = splitOneOf "-x" move
+      len = length move_
+  in
+    (len - 1, splitIntoMoves move_ len)
+
+splitIntoMoves :: [String] -> Int -> [String]
+splitIntoMoves xs len = loop 0
+  where
+    loop :: Int -> [String]
+    loop idx
+      | idx == (len - 1) = []
+      | otherwise = (xs !! idx) : (xs !! (idx + 1)) : loop (idx + 1)
