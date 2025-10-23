@@ -1,0 +1,38 @@
+# GHC compiled files
+*.hi
+*.o
+*.dyn_o
+*.dyn_hi
+
+# GHCi history
+.ghci_history
+
+# Stack build directories
+.stack-work/
+
+# Cabal build directories
+dist/
+dist-newstyle/
+
+# Executables
+*.exe
+*.out
+*.so
+*.dll
+*.dylib
+
+# Hoogle database
+*.hoo
+
+# Editor/IDE files
+*~ 
+*.swp
+*.swo
+*.vscode/
+.idea/
+*.iml
+
+# Temporary files
+*.log
+*.tmp
+
