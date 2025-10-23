@@ -4,47 +4,59 @@ import System.Environment (getArgs)
 import System.Directory (doesFileExist)
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.List (unfoldr)
+import Data.Char (isSpace)
 
 main :: IO ()
 main = do
   args <- getArgs
   case args of
     (fileName:_) -> do
-      --print fileName
       print fileName
       exists <- doesFileExist fileName
-      if exists then do
-        contents <- readFile fileName
-      --print text
-        let games = splitOn "\n\n" contents
-        let text = words (games !! 0)
-        let moves = getMoves (text)
-        print (getResult text)
-      --print moves
-      --print (moves)
-      --print formated moves
-        print (gameToString (splitMoves moves))
-      else
-        print "File does not exist"
-    [] -> do
-      print "Please provide a fileName"
+      if exists
+        then processFile fileName
+        else putStrLn "File does not exist"
+    [] -> putStrLn "Please provide a fileName"
+
+-- PROCESS FILE
+processFile :: FilePath -> IO ()
+processFile fileName = do
+  contents <- readFile fileName
+  let games = splitOn "\n\n" contents
+      nonEmptyGames = filter (not . all isSpace) games  -- skip empty games
+  case nonEmptyGames of
+    [] -> putStrLn "No games found in file."
+    (_) -> do
+      let formatedGames = processGames nonEmptyGames
+      putStrLn formatedGames
+
+processGames :: [String] -> String
+processGames games =
+  intercalate "\n\n" (map processGame games)
+
+processGame :: String -> String
+processGame game =
+  let textWords = words (trim game)
+      result = getResult textWords
+      moves = getMoves textWords
+  in result ++ "\n" ++ (gameToString (splitMoves moves))
 
 -- get score
 getResult :: [String] -> String
 getResult xs =
-  let maybeIdx = elemIndex "[Result" xs
-      idx = getIndex maybeIdx
-  in
-  if idx == 0
-  then "Result not found"
-  else
-    let resultIdx = idx + 1
-    in if resultIdx >= length xs
-       then "Result not found"
-       else cleanResult (xs !! resultIdx)
+  case elemIndex "[Result" xs of
+    Nothing -> "Result Not Found"
+    Just idx ->
+      case drop (idx + 1) xs of
+        (res:_) -> cleanResult res
+        [] -> "Result Not Found"
 
 cleanResult :: String -> String
-cleanResult result = substring 1 ((length result) - 3) result
+cleanResult = filter (`notElem` "\"[]")
+
+trim :: String -> String
+trim = f . f
+  where f = reverse . dropWhile isSpace
 
 -- get moves
 getMoves :: [String] -> [[String]]
@@ -65,7 +77,6 @@ getMove xs idx =
     (first:_) -> [first]
     [] -> []
 
-
 getMoveIdx :: [String] -> Int -> Maybe Int
 getMoveIdx xs n = elemIndex (getPlace n) xs
 
@@ -77,9 +88,6 @@ getIndex maybeIdx =
   case maybeIdx of
     Just i  -> i
     Nothing -> 0
-
-substring :: Int -> Int -> String -> String
-substring start len str = take len (drop start str)
 
 -- parse moves
 splitMoves :: [[String]] -> [(Int, [String])]
@@ -99,4 +107,5 @@ moveToString (n, parts) = intercalate "," (show n : parts)
 
 gameToString :: [(Int, [String])] -> String
 gameToString moves = intercalate "," (map moveToString moves)
+
 
