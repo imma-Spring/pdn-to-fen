@@ -2,6 +2,8 @@ import Data.List
 import Data.List.Split
 import System.Environment (getArgs)
 import System.Directory (doesFileExist)
+import Data.Maybe (mapMaybe, fromMaybe)
+import Data.List (unfoldr)
 
 main :: IO ()
 main = do
@@ -21,7 +23,7 @@ main = do
       --print moves
       --print (moves)
       --print formated moves
-        print (splitMoves moves)
+        print (gameToString (splitMoves moves))
       else
         print "File does not exist"
     [] -> do
@@ -46,25 +48,26 @@ cleanResult result = substring 1 ((length result) - 3) result
 
 -- get moves
 getMoves :: [String] -> [[String]]
-getMoves xs = loop 1 (getMoveIdx xs 1)
+getMoves xs = unfoldr nextMove 1
   where
-    loop :: Int -> Int -> [[String]]
-    loop idx cond
-      | cond == 0  = []
-      | otherwise  = getMove xs cond : loop (idx + 1) (getMoveIdx xs (idx + 1))
+    nextMove :: Int -> Maybe ([String], Int)
+    nextMove n = do
+      idx <- getMoveIdx xs n
+      let move = getMove xs idx
+      return (move, n + 1)
 
 getMove :: [String] -> Int -> [String]
 getMove xs idx =
-  let last = (xs !! (idx + 2))
-  in
-    [(xs !! (idx + 1))] ++ if last == "1-0" || last == "0-1" || last == "1/2-1/2" then [] else [last]
+  case drop (idx + 1) xs of
+    (first:second:_) ->
+      let result = ["1-0", "0-1", "1/2-1/2"]
+      in first : if second `elem` result then [] else [second]
+    (first:_) -> [first]
+    [] -> []
 
 
-getMoveIdx :: [String] -> Int -> Int
-getMoveIdx xs n =
-  let place = getPlace n
-      maybeIdx = elemIndex place xs
-  in getIndex maybeIdx
+getMoveIdx :: [String] -> Int -> Maybe Int
+getMoveIdx xs n = elemIndex (getPlace n) xs
 
 getPlace :: Int -> String
 getPlace n = show n ++ "."
@@ -80,28 +83,20 @@ substring start len str = take len (drop start str)
 
 -- parse moves
 splitMoves :: [[String]] -> [(Int, [String])]
-splitMoves moves = loop 0
-  where
-    loop :: Int -> [(Int, [String])]
-    loop idx
-      | idx == length moves = []
-      | otherwise = (splitMovePair (moves !! idx)) ++ (loop (idx + 1))
-
-splitMovePair :: [String] -> [(Int, [String])]
-splitMovePair moves =
-  [splitMove (moves !! 0)] ++ if length moves == 2 then [splitMove (moves !! 1)] else []
+splitMoves moves = concatMap (map splitMove) moves
 
 splitMove :: String -> (Int, [String])
 splitMove move =
-  let move_ = splitOneOf "-x" move
-      len = length move_
-  in
-    (len - 1, splitIntoMoves move_ len)
+  let parts = splitOneOf "-x" move
+  in (length parts - 1, splitIntoMoves parts)
 
-splitIntoMoves :: [String] -> Int -> [String]
-splitIntoMoves xs len = loop 0
-  where
-    loop :: Int -> [String]
-    loop idx
-      | idx == (len - 1) = []
-      | otherwise = (xs !! idx) : (xs !! (idx + 1)) : loop (idx + 1)
+splitIntoMoves :: [String] -> [String]
+splitIntoMoves xs = concatMap (\(a, b) -> [a, b]) (zip xs (tail xs))
+
+-- converts game to string
+moveToString :: (Int, [String]) -> String
+moveToString (n, parts) = intercalate "," (show n : parts)
+
+gameToString :: [(Int, [String])] -> String
+gameToString moves = intercalate "," (map moveToString moves)
+
