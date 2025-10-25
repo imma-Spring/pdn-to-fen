@@ -10,25 +10,25 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    (fileName:_) -> do
-      print fileName
-      exists <- doesFileExist fileName
+    (fileNameIn:fileNameOut:_) -> do
+      print fileNameIn
+      exists <- doesFileExist fileNameIn
       if exists
-        then processFile fileName
+        then processFile fileNameIn fileNameOut
         else putStrLn "File does not exist"
-    [] -> putStrLn "Please provide a fileName"
+    (_) -> putStrLn "Format: ./pdn_to_rpdn [input_file].pdn [output_file].rpdn"
 
 -- PROCESS FILE
-processFile :: FilePath -> IO ()
-processFile fileName = do
-  contents <- readFile fileName
+processFile :: FilePath -> FilePath -> IO ()
+processFile fileNameIn fileNameOut = do
+  contents <- readFile fileNameIn
   let games = splitOn "\n\n" contents
       nonEmptyGames = filter (not . all isSpace) games  -- skip empty games
   case nonEmptyGames of
     [] -> putStrLn "No games found in file."
     (_) -> do
       let formatedGames = processGames nonEmptyGames
-      putStrLn formatedGames
+      writeFile fileNameOut formatedGames
 
 processGames :: [String] -> String
 processGames games =
